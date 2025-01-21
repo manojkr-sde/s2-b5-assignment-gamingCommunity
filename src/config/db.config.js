@@ -1,5 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
+const path = require('path');
+const fs = require('fs');
 
 class Database {
   static dbInstance = null;
@@ -7,11 +9,25 @@ class Database {
   static async connectToDb() {
     if (!Database.dbInstance) {
       try {
+        // Determine the correct database path
+        const isVercel = process.env.VERCEL === "1";
+        const localDbPath = path.join(__dirname, 'database.sqlite');
+        const vercelDbPath = '/tmp/database.sqlite';
+        const dbPath = isVercel ? vercelDbPath : localDbPath;
+
+        // If running on Vercel, ensure database exists in /tmp/
+        if (isVercel) {
+          if (!fs.existsSync(vercelDbPath) && fs.existsSync(localDbPath)) {
+            fs.copyFileSync(localDbPath, vercelDbPath);
+          }
+        }
+
         Database.dbInstance = await sqlite.open({
-          filename: 'src/database/database.sqlite',
+          filename: dbPath,
           driver: sqlite3.Database,
         });
-        console.log('Connected to DB Successfully!');
+
+        console.log(`Connected to DB Successfully at: ${dbPath}`);
       } catch (error) {
         console.log(`Error in connecting to DB: ${error.message}`);
       }
@@ -26,7 +42,7 @@ class Database {
         Database.dbInstance = null;
         console.log('Database connection closed.');
       } catch (error) {
-        console.log(`Failed in closing the connection : ${error.message}`);
+        console.log(`Failed in closing the connection: ${error.message}`);
       }
     }
   }
