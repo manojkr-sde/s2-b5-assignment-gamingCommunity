@@ -4,7 +4,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "npx nodemon src/index.js",
-    "postinstall": "node src/seeders/index.js"
+    "build": "node src/seeders/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
