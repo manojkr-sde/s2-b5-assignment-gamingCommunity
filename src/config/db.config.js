@@ -1,7 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const path = require('path');
-const fs = require('fs');
+const dotenv = require('dotenv');
+dotenv.config();
 
 class Database {
   static dbInstance = null;
@@ -9,27 +10,22 @@ class Database {
   static async connectToDb() {
     if (!Database.dbInstance) {
       try {
-        // Determine the correct database path
+        // Use `/tmp/` for SQLite in Vercel, otherwise store locally
         const isVercel = process.env.VERCEL === "1";
-        const localDbPath = path.join(__dirname, 'database.sqlite');
-        const vercelDbPath = '/tmp/database.sqlite';
-        const dbPath = isVercel ? vercelDbPath : localDbPath;
+        const dbPath = isVercel ? '/tmp/database.sqlite' : path.join(__dirname, '../database/database.sqlite');
 
-        // If running on Vercel, ensure database exists in /tmp/
-        if (isVercel) {
-          if (!fs.existsSync(vercelDbPath) && fs.existsSync(localDbPath)) {
-            fs.copyFileSync(localDbPath, vercelDbPath);
-          }
-        }
+        console.log(`📌 Using database path: ${dbPath}`);
 
+        // Open SQLite database (it will create the file if it doesn’t exist)
         Database.dbInstance = await sqlite.open({
           filename: dbPath,
           driver: sqlite3.Database,
         });
 
-        console.log(`Connected to DB Successfully at: ${dbPath}`);
+        console.log(`✅ Connected to DB Successfully at: ${dbPath}`);
+
       } catch (error) {
-        console.log(`Error in connecting to DB: ${error.message}`);
+        console.error(`❌ Error in connecting to DB: ${error.message}`);
       }
     }
     return Database.dbInstance;
@@ -40,9 +36,9 @@ class Database {
       try {
         await Database.dbInstance.close();
         Database.dbInstance = null;
-        console.log('Database connection closed.');
+        console.log('✅ Database connection closed.');
       } catch (error) {
-        console.log(`Failed in closing the connection: ${error.message}`);
+        console.error(`❌ Failed in closing the connection: ${error.message}`);
       }
     }
   }
